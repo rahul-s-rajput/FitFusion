@@ -1,0 +1,37 @@
+# FitFusion Backend Requirements
+# Updated for latest Google GenAI SDK
+
+# Core dependencies
+google-genai>=0.1.0  # Latest Google GenAI SDK
+pydantic>=2.0.0  # Pydantic V2 for data validation
+python-dotenv>=1.0.0  # Environment variable management
+aiohttp>=3.8.0  # Async HTTP client
+backoff>=2.2.1  # Exponential backoff for retries
+
+# CrewAI dependencies (for crew_orchestrator)
+crewai>=0.1.0
+langchain>=0.1.0
+langchain-google-genai>=0.0.5
+
+# Database
+supabase>=2.0.0  # Supabase client
+asyncpg>=0.28.0  # Async PostgreSQL driver (optional, for direct DB connections)
+
+# Web framework (if using API)
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Utilities
+python-json-logger>=2.0.7  # Structured logging
+tenacity>=8.2.3  # Advanced retry logic
+
+# Development tools (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0  # Code formatting
+flake8>=6.0.0  # Linting
+mypy>=1.0.0  # Type checking
+
+# Type stubs for better IDE support
+types-aiofiles>=23.0.0
+types-requests>=2.31.0

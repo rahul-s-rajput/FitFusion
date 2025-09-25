@@ -1,0 +1,503 @@
+openapi: 3.0.3
+info:
+  title: FitFusion AI Workout API
+  description: REST API for AI-powered workout generation and management with 8 specialized CrewAI agents
+  version: 1.0.0
+  contact:
+    name: FitFusion Development
+  license:
+    name: MIT
+  
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://your-app.hf.space
+    description: Production server (Huggingface Spaces)
+
+paths:
+  # User Profile Management
+  /api/profile:
+    get:
+      summary: Get user profile
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: User profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    
+    put:
+      summary: Update user profile
+      operationId: updateUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  # Equipment Management  
+  /api/equipment:
+    get:
+      summary: List user equipment
+      operationId: listEquipment
+      responses:
+        '200':
+          description: Equipment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Equipment'
+    
+    post:
+      summary: Add new equipment
+      operationId: addEquipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentCreate'
+      responses:
+        '201':
+          description: Equipment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+
+  /api/equipment/{equipment_id}:
+    put:
+      summary: Update equipment
+      operationId: updateEquipment
+      parameters:
+        - name: equipment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentUpdate'
+      responses:
+        '200':
+          description: Equipment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+    
+    delete:
+      summary: Remove equipment
+      operationId: removeEquipment
+      parameters:
+        - name: equipment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Equipment removed
+
+  # AI Workout Generation
+  /api/workouts/generate:
+    post:
+      summary: Generate new workout program using AI agents
+      operationId: generateWorkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutGenerationRequest'
+      responses:
+        '202':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationTask'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/workouts/generate/{task_id}:
+    get:
+      summary: Check generation status
+      operationId: getGenerationStatus
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Generation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationStatus'
+
+  # Workout Programs
+  /api/programs:
+    get:
+      summary: List workout programs
+      operationId: listPrograms
+      responses:
+        '200':
+          description: Program list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkoutProgram'
+
+  /api/programs/{program_id}:
+    get:
+      summary: Get program details
+      operationId: getProgram
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Program details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutProgramDetail'
+
+  /api/programs/{program_id}/activate:
+    post:
+      summary: Set program as active
+      operationId: activateProgram
+      parameters:
+        - name: program_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Program activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutProgram'
+
+  # Workout Sessions
+  /api/sessions:
+    get:
+      summary: List workout sessions
+      operationId: listSessions
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkoutSession'
+
+  /api/sessions/{session_id}:
+    get:
+      summary: Get session details
+      operationId: getSession
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSessionDetail'
+
+  /api/sessions/{session_id}/start:
+    post:
+      summary: Start workout session
+      operationId: startSession
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSession'
+
+  /api/sessions/{session_id}/complete:
+    post:
+      summary: Complete workout session
+      operationId: completeSession
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCompletion'
+      responses:
+        '200':
+          description: Session completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSession'
+
+components:
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fitness_goals:
+          type: array
+          items:
+            type: string
+            enum: [weight_loss, strength, endurance, flexibility]
+        experience_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        physical_attributes:
+          type: object
+        space_constraints:
+          type: object
+        noise_preferences:
+          type: object
+        scheduling_preferences:
+          type: object
+        ai_coaching_settings:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Equipment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+          enum: [weights, cardio, resistance, bodyweight, flexibility]
+        specifications:
+          type: object
+        space_requirements:
+          type: object
+        noise_characteristics:
+          type: object
+        condition:
+          type: string
+          enum: [excellent, good, fair, needs_repair]
+        is_available:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkoutProgram:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        total_days:
+          type: integer
+        difficulty_level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        program_type:
+          type: string
+          enum: [strength, cardio, hiit, yoga, mixed]
+        completion_percentage:
+          type: number
+          format: float
+        is_active:
+          type: boolean
+        is_completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkoutSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        program_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        scheduled_date:
+          type: string
+          format: date
+        day_number:
+          type: integer
+        workout_type:
+          type: string
+          enum: [strength, cardio, rest, flexibility, mixed]
+        estimated_duration:
+          type: integer
+        completion_status:
+          type: string
+          enum: [scheduled, in_progress, completed, skipped]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WorkoutGenerationRequest:
+      type: object
+      required:
+        - program_duration
+        - difficulty_preference
+      properties:
+        program_duration:
+          type: integer
+          minimum: 7
+          maximum: 90
+        difficulty_preference:
+          type: string
+          enum: [beginner, intermediate, advanced, adaptive]
+        focus_areas:
+          type: array
+          items:
+            type: string
+        custom_preferences:
+          type: object
+
+    GenerationTask:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        estimated_completion_time:
+          type: string
+          format: date-time
+
+    GenerationStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        progress_percentage:
+          type: number
+          format: float
+        current_step:
+          type: string
+        result:
+          $ref: '#/components/schemas/WorkoutProgram'
+        error_message:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
