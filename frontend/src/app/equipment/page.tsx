@@ -17,7 +17,8 @@ import {
   Lightbulb,
   Star,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Wrench
 } from 'lucide-react';
 
 import { useEquipment, useEquipmentActions, useUIActions } from '../../store';
@@ -794,6 +795,14 @@ export default function EquipmentPage() {
 
                   </Button>
 
+                  <Button variant="outline" className="h-auto flex flex-col items-center gap-2 rounded-2xl border-border/60 p-4" onClick={() => router.push('/equipment/maintenance')}>
+
+                    <Wrench className="h-5 w-5" />
+
+                    <span className="text-sm">Maintenance</span>
+
+                  </Button>
+
                   <Button variant="outline" className="h-auto flex flex-col items-center gap-2 rounded-2xl border-border/60 p-4" onClick={() => router.push('/equipment/suggestions')}>
 
                     <Sparkles className="h-5 w-5" />
@@ -807,14 +816,6 @@ export default function EquipmentPage() {
                     <Settings className="h-5 w-5" />
 
                     <span className="text-sm">Preferences</span>
-
-                  </Button>
-
-                  <Button variant="outline" className="h-auto flex flex-col items-center gap-2 rounded-2xl border-border/60 p-4" onClick={() => router.push('/profile/progress')}>
-
-                    <TrendingUp className="h-5 w-5" />
-
-                    <span className="text-sm">View usage</span>
 
                   </Button>
 

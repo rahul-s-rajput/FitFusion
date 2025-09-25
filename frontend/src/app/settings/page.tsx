@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Bell, Wifi, Database, Shield, ArrowLeft, Settings, Smartphone, Sparkles } from 'lucide-react';
+import { Moon, Sun, Bell, Wifi, Database, Shield, ArrowLeft, Settings, Smartphone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '../../components/ui/button';
@@ -202,16 +202,16 @@ const SettingsPage = () => {
           <Card className="border-border/60">
             <CardHeader>
               <CardTitle>Need help?</CardTitle>
-              <CardDescription>Reach out to the FitFusion support team.</CardDescription>
+              <CardDescription>Jump into detailed controls without leaving the app.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2 text-sm">
-              <Button variant="outline" onClick={() => router.push('/profile/progress')}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                View guides
+              <Button variant="outline" onClick={() => router.push('/settings/notifications')}>
+                <Bell className="mr-2 h-4 w-4" />
+                Notification center
               </Button>
-              <Button variant="outline" onClick={() => router.push('/equipment')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Contact support
+              <Button variant="outline" onClick={() => router.push('/settings/privacy')}>
+                <Shield className="mr-2 h-4 w-4" />
+                Privacy controls
               </Button>
             </CardContent>
           </Card>
