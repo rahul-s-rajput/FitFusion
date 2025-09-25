@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Dumbbell, 
-  Settings, 
+  Plus,
+  Search,
+  Filter,
+  Dumbbell,
+  Activity,
+  Settings,
   Trash2, 
   Edit, 
   CheckCircle, 

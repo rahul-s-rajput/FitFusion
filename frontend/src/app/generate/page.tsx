@@ -57,6 +57,17 @@ export default function GeneratePage() {
   const generatedWorkout = workout.generatedWorkout?.workout;
   const generatedAgentContributions = workout.generatedWorkout?.agentContributions || [];
 
+  const capitalize = (value?: string | null) => {
+    if (!value) return '';
+    return value
+      .toString()
+      .trim()
+      .split(/[\s_-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
+
   const formatSeconds = (value?: number | string | null) => {
     if (value === undefined || value === null) return null;
     const numeric = typeof value === 'number' ? value : Number(value);
