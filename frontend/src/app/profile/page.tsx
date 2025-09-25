@@ -17,7 +17,6 @@ import {
   BarChart3,
   MapPin,
   User,
-  Zap,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,6 +37,21 @@ interface ProfileAchievement {
   icon?: LucideIcon;
   progress?: number;
   unlockedAt?: Date | string;
+}
+
+interface StoreAchievement {
+  id?: string | number;
+  title?: string;
+  name?: string;
+  category?: string;
+  description?: string;
+  icon?: LucideIcon;
+  progress?: number;
+  progress_value?: number;
+  target?: number;
+  target_value?: number;
+  unlockedAt?: string | Date;
+  unlocked_at?: string | Date;
 }
 
 const capitalizeWords = (value?: string | null) => {
@@ -121,14 +135,14 @@ export default function ProfilePage() {
     return 'Athlete';
   }, [user.profile?.email, user.profile?.name]);
 
-  const focusGoals = user.profile?.fitness_goals ?? [];
+  const focusGoals = useMemo(() => user.profile?.fitness_goals ?? [], [user.profile?.fitness_goals]);
   const availableEquipment = useMemo(
     () => equipment.inventory.filter((item) => item.is_available),
     [equipment.inventory]
   );
 
   const activeProgram = workout.activeProgram;
-  const todaySessions = workout.todaySessions ?? [];
+  const todaySessions = useMemo(() => workout.todaySessions ?? [], [workout.todaySessions]);
 
   const upcomingSession = useMemo(() => {
     if (!todaySessions.length) {
@@ -147,6 +161,8 @@ export default function ProfilePage() {
   }, [todaySessions]);
 
   const readinessScore = useMemo(() => {
+    // Blend streak momentum, program completion, and whether a session is queued
+    // to produce a mobile-friendly readiness pulse for the dashboard hero.
     const streak = progress.stats.currentStreak ?? 0;
     const completionBoost = activeProgram ? Math.round(activeProgram.completion_percentage ?? 0) / 5 : 0;
     return Math.min(100, streak * 12 + completionBoost + (todaySessions.length ? 10 : 0));
@@ -220,7 +236,7 @@ export default function ProfilePage() {
 
   const achievements = useMemo<ProfileAchievement[]>(() => {
     if (progress.achievements && progress.achievements.length > 0) {
-      return progress.achievements.slice(0, 3).map((achievement: any, index: number) => ({
+      return progress.achievements.slice(0, 3).map((achievement: StoreAchievement, index: number) => ({
         id: String(achievement.id ?? `achievement-${index}`),
         title: achievement.title ?? capitalizeWords(achievement.category) ?? 'Milestone',
         description: achievement.description ?? 'Keep building momentum to unlock this milestone.',
@@ -579,6 +595,14 @@ export default function ProfilePage() {
                   >
                     <Trophy className="h-5 w-5" />
                     <span className="text-sm">Achievements</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-auto flex flex-col items-center gap-2 rounded-2xl border-border/60 p-4"
+                    onClick={() => router.push('/profile/history')}
+                  >
+                    <Calendar className="h-5 w-5" />
+                    <span className="text-sm">History</span>
                   </Button>
                   <Button
                     variant="outline"

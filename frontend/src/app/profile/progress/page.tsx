@@ -1,35 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  Calendar, 
-  Award, 
-  Target, 
-  Activity, 
-  Clock, 
-  Flame, 
+import {
+  TrendingUp,
+  Calendar,
+  Award,
+  Target,
+  Activity,
+  Clock,
+  Flame,
   Zap,
   BarChart3,
   LineChart,
   PieChart,
-  Filter,
   Download,
   Share,
   Trophy,
   Medal,
   Star,
-  ChevronRight,
-  Plus
+  Sparkles,
+  Plus,
+  type LucideIcon,
 } from 'lucide-react';
 
-import { useProgress, useUser, useProgressActions, useUIActions } from '../../../store';
+import { useProgress, useProgressActions, useUIActions } from '../../../store';
 import { ProgressRecord } from '../../../lib/db';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Badge } from '../../../components/ui/badge';
 import { Progress } from '../../../components/ui/progress';
 import { PageHero, type HeroStat } from '../../../components/workouts/page-hero';
 import { SectionHeader } from '../../../components/workouts/section-header';
@@ -42,7 +41,7 @@ interface ProgressMetric {
   unit: string;
   change: number;
   changeType: 'increase' | 'decrease' | 'neutral';
-  icon: any;
+  icon: LucideIcon;
   color: string;
 }
 
@@ -50,122 +49,160 @@ interface Achievement {
   id: string;
   title: string;
   description: string;
-  icon: any;
+  icon: LucideIcon;
   unlockedAt?: Date;
   progress?: number;
   target?: number;
   category: 'strength' | 'endurance' | 'consistency' | 'milestone';
 }
 
+interface StoreAchievement {
+  id?: string | number;
+  title?: string;
+  name?: string;
+  description?: string;
+  icon?: LucideIcon;
+  unlockedAt?: string | Date;
+  unlocked_at?: string | Date;
+  progress?: number;
+  progress_value?: number;
+  target?: number;
+  target_value?: number;
+  category?: string;
+}
+
+const TIMEFRAME_OPTIONS = [
+  { value: 'week', label: 'This Week' },
+  { value: 'month', label: 'This Month' },
+  { value: 'quarter', label: 'This Quarter' },
+  { value: 'year', label: 'This Year' },
+] as const;
+
+type TimeframeValue = (typeof TIMEFRAME_OPTIONS)[number]['value'];
+
+const FALLBACK_ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'milestone-first-steps',
+    title: 'First Steps',
+    description: 'Complete your first workout',
+    icon: Trophy,
+    unlockedAt: new Date('2024-01-15'),
+    category: 'milestone',
+  },
+  {
+    id: 'consistency-week-warrior',
+    title: 'Week Warrior',
+    description: 'Complete 7 workouts in a week',
+    icon: Medal,
+    unlockedAt: new Date('2024-01-22'),
+    category: 'consistency',
+  },
+  {
+    id: 'strength-builder',
+    title: 'Strength Builder',
+    description: 'Complete 10 strength training sessions',
+    icon: Award,
+    progress: 8,
+    target: 10,
+    category: 'strength',
+  },
+  {
+    id: 'endurance-master',
+    title: 'Endurance Master',
+    description: 'Complete 5 hours of cardio training',
+    icon: Star,
+    progress: 3.5,
+    target: 5,
+    category: 'endurance',
+  },
+];
+
 export default function ProgressPage() {
   const router = useRouter();
   const progress = useProgress();
-  const user = useUser();
   const { setRecentRecords, updateStats, setProgressLoading } = useProgressActions();
   const { setCurrentPage, addNotification } = useUIActions();
 
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<TimeframeValue>('month');
   const [selectedMetric, setSelectedMetric] = useState<string>('all');
   const [chartType, setChartType] = useState<'line' | 'bar' | 'pie'>('line');
 
-  // Mock data - would come from API
-  const [progressMetrics] = useState<ProgressMetric[]>([
-    {
-      name: 'Total Workouts',
-      value: 24,
-      unit: 'sessions',
-      change: 12,
-      changeType: 'increase',
-      icon: Activity,
-      color: 'text-blue-600'
-    },
-    {
-      name: 'Workout Streak',
-      value: 7,
-      unit: 'days',
-      change: 2,
-      changeType: 'increase',
-      icon: Flame,
-      color: 'text-orange-600'
-    },
-    {
-      name: 'Total Duration',
-      value: 18,
-      unit: 'hours',
-      change: 5,
-      changeType: 'increase',
-      icon: Clock,
-      color: 'text-green-600'
-    },
-    {
-      name: 'Calories Burned',
-      value: 3240,
-      unit: 'kcal',
-      change: 480,
-      changeType: 'increase',
-      icon: Zap,
-      color: 'text-purple-600'
+    const progressMetrics = useMemo<ProgressMetric[]>(() => {
+    const totalWorkouts = progress.stats.totalWorkouts ?? 0;
+    const currentStreak = progress.stats.currentStreak ?? 0;
+    const totalMinutes = progress.stats.totalWorkoutTime ?? 0;
+    const caloriesEstimate = Math.max(0, Math.round(totalMinutes * 6));
+
+    return [
+      {
+        name: 'Total Workouts',
+        value: totalWorkouts,
+        unit: 'sessions',
+        change: totalWorkouts ? Math.max(1, Math.round(totalWorkouts * 0.15)) : 0,
+        changeType: totalWorkouts ? 'increase' : 'neutral',
+        icon: Activity,
+        color: 'text-blue-600'
+      },
+      {
+        name: 'Workout Streak',
+        value: currentStreak,
+        unit: 'days',
+        change: currentStreak ? 1 : 0,
+        changeType: currentStreak ? 'increase' : 'neutral',
+        icon: Flame,
+        color: 'text-orange-600'
+      },
+      {
+        name: 'Total Duration',
+        value: totalMinutes >= 60 ? Math.round(totalMinutes / 60) : totalMinutes,
+        unit: totalMinutes >= 60 ? 'hours' : 'minutes',
+        change: totalMinutes ? Math.max(1, Math.round(totalMinutes * 0.1)) : 0,
+        changeType: totalMinutes ? 'increase' : 'neutral',
+        icon: Clock,
+        color: 'text-green-600'
+      },
+      {
+        name: 'Calories Burned',
+        value: caloriesEstimate,
+        unit: 'kcal',
+        change: caloriesEstimate ? Math.max(40, Math.round(caloriesEstimate * 0.12)) : 0,
+        changeType: caloriesEstimate ? 'increase' : 'neutral',
+        icon: Zap,
+        color: 'text-purple-600'
+      }
+    ];
+  }, [progress.stats.currentStreak, progress.stats.totalWorkoutTime, progress.stats.totalWorkouts]);
+
+  const achievements = useMemo<Achievement[]>(() => {
+    if (progress.achievements && progress.achievements.length > 0) {
+      return progress.achievements.map((achievement: StoreAchievement, index: number) => ({
+        id: String(achievement.id ?? `achievement-${index}`),
+        title: achievement.title ?? achievement.name ?? 'Milestone',
+        description: achievement.description ?? 'Keep building momentum to unlock this milestone.',
+        icon: achievement.icon ?? Trophy,
+        unlockedAt: achievement.unlockedAt
+          ? new Date(achievement.unlockedAt)
+          : achievement.unlocked_at
+          ? new Date(achievement.unlocked_at)
+          : undefined,
+        progress:
+          typeof achievement.progress === 'number'
+            ? achievement.progress
+            : typeof achievement.progress_value === 'number'
+            ? achievement.progress_value
+            : undefined,
+        target: achievement.target ?? achievement.target_value,
+        category: (achievement.category ?? 'milestone') as Achievement['category'],
+      }));
     }
-  ]);
+    return FALLBACK_ACHIEVEMENTS;
+  }, [progress.achievements]);
 
-  const [achievements] = useState<Achievement[]>([
-    {
-      id: '1',
-      title: 'First Steps',
-      description: 'Complete your first workout',
-      icon: Trophy,
-      unlockedAt: new Date('2024-01-15'),
-      category: 'milestone'
-    },
-    {
-      id: '2',
-      title: 'Week Warrior',
-      description: 'Complete 7 workouts in a week',
-      icon: Medal,
-      unlockedAt: new Date('2024-01-22'),
-      category: 'consistency'
-    },
-    {
-      id: '3',
-      title: 'Strength Builder',
-      description: 'Complete 10 strength training sessions',
-      icon: Award,
-      progress: 8,
-      target: 10,
-      category: 'strength'
-    },
-    {
-      id: '4',
-      title: 'Endurance Master',
-      description: 'Complete 5 hours of cardio training',
-      icon: Star,
-      progress: 3.5,
-      target: 5,
-      category: 'endurance'
-    }
-  ]);
-
-  const timeframeOptions = [
-    { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' },
-    { value: 'quarter', label: 'This Quarter' },
-    { value: 'year', label: 'This Year' }
-  ];
-
-  useEffect(() => {
-    setCurrentPage('profile');
-    loadProgressData();
-  }, [selectedTimeframe]);
-
-  const loadProgressData = async () => {
+  const loadProgressData = useCallback(async () => {
     try {
       setProgressLoading(true);
 
       // Load progress records
-      const days = selectedTimeframe === 'week' ? 7 : 
-                   selectedTimeframe === 'month' ? 30 : 
-                   selectedTimeframe === 'quarter' ? 90 : 365;
-
       // This would be an actual API call
       const mockRecords: ProgressRecord[] = [
         {
@@ -218,7 +255,15 @@ export default function ProgressPage() {
     } finally {
       setProgressLoading(false);
     }
-  };
+  }, [addNotification, selectedTimeframe, setProgressLoading, setRecentRecords, updateStats]);
+
+  useEffect(() => {
+    setCurrentPage('profile');
+  }, [setCurrentPage]);
+
+  useEffect(() => {
+    loadProgressData();
+  }, [loadProgressData]);
 
   const getAchievementProgress = (achievement: Achievement) => {
     if (!achievement.progress || !achievement.target) return 100;
@@ -240,130 +285,82 @@ export default function ProgressPage() {
   const totalWorkoutMinutes = progress.stats.totalWorkoutTime ?? 0;
 
   const workoutTimeLabel = totalWorkoutMinutes >= 60
-
     ? `${Math.round(totalWorkoutMinutes / 60)} hr`
-
     : `${totalWorkoutMinutes} min`;
 
-  const achievementsEarned = achievements.filter((item) => item.unlockedAt).length;
+  const achievementsEarned = useMemo(
+    () => achievements.filter((item) => Boolean(item.unlockedAt)).length,
+    [achievements],
+  );
 
   const favoriteFocus = progress.stats.favoriteWorkoutType
-
     ? progress.stats.favoriteWorkoutType.replace(/_/g, ' ')
-
     : 'Not set';
 
-  const activeTimeframeLabel = timeframeOptions.find((option) => option.value === selectedTimeframe)?.label ?? 'This Month';
+  const activeTimeframeLabel = useMemo(
+    () => TIMEFRAME_OPTIONS.find((option) => option.value === selectedTimeframe)?.label ?? 'This Month',
+    [selectedTimeframe],
+  );
 
+  const heroStats = useMemo<HeroStat[]>(
+    () => [
+      {
+        label: 'Total Workouts',
+        value: String(progress.stats.totalWorkouts ?? 0),
+        helper: 'All time sessions',
+        icon: Activity,
+      },
+      {
+        label: 'Current Streak',
+        value: `${progress.stats.currentStreak ?? 0} days`,
+        helper: `Best ${progress.stats.longestStreak ?? 0} days`,
+        icon: Flame,
+      },
+      {
+        label: 'Workout Time',
+        value: workoutTimeLabel,
+        helper: 'Lifetime volume',
+        icon: Clock,
+      },
+      {
+        label: 'Favourite Focus',
+        value: favoriteFocus,
+        helper: 'Most completed style',
+        icon: Target,
+      },
+    ],
+    [favoriteFocus, progress.stats.currentStreak, progress.stats.longestStreak, progress.stats.totalWorkouts, workoutTimeLabel],
+  );
 
-
-  const heroStats: HeroStat[] = [
-
-    {
-
-      label: 'Total Workouts',
-
-      value: String(progress.stats.totalWorkouts ?? 0),
-
-      helper: 'All time sessions',
-
-      icon: Activity,
-
-    },
-
-    {
-
-      label: 'Current Streak',
-
-      value: `${progress.stats.currentStreak ?? 0} days`,
-
-      helper: `Best ${progress.stats.longestStreak ?? 0} days`,
-
-      icon: Flame,
-
-    },
-
-    {
-
-      label: 'Workout Time',
-
-      value: workoutTimeLabel,
-
-      helper: 'Lifetime volume',
-
-      icon: Clock,
-
-    },
-
-    {
-
-      label: 'Favourite Focus',
-
-      value: favoriteFocus,
-
-      helper: 'Most completed style',
-
-      icon: Target,
-
-    },
-
-  ];
-
-
-
-  const quickStatsCards = [
-
-    {
-
-      title: 'Records logged',
-
-      value: `${progress.recentRecords.length}`,
-
-      helper: 'Recent metrics tracked',
-
-      icon: BarChart3,
-
-    },
-
-    {
-
-      title: 'Achievements',
-
-      value: `${achievementsEarned}/${achievements.length}`,
-
-      helper: 'Unlocked badges',
-
-      icon: Trophy,
-
-    },
-
-    {
-
-      title: 'Focus metric',
-
-      value: selectedMetric === 'all' ? 'All metrics' : selectedMetric.replace(/_/g, ' '),
-
-      helper: 'Current filter',
-
-      icon: LineChart,
-
-    },
-
-    {
-
-      title: 'Timeframe',
-
-      value: activeTimeframeLabel,
-
-      helper: 'Viewing window',
-
-      icon: Calendar,
-
-    },
-
-  ];
-
-
+  const quickStatsCards = useMemo(
+    () => [
+      {
+        title: 'Records logged',
+        value: `${progress.recentRecords.length}`,
+        helper: 'Recent metrics tracked',
+        icon: BarChart3,
+      },
+      {
+        title: 'Achievements',
+        value: `${achievementsEarned}/${achievements.length}`,
+        helper: 'Unlocked badges',
+        icon: Trophy,
+      },
+      {
+        title: 'Focus metric',
+        value: selectedMetric === 'all' ? 'All metrics' : selectedMetric.replace(/_/g, ' '),
+        helper: 'Current filter',
+        icon: LineChart,
+      },
+      {
+        title: 'Timeframe',
+        value: activeTimeframeLabel,
+        helper: 'Viewing window',
+        icon: Calendar,
+      },
+    ],
+    [achievements.length, achievementsEarned, activeTimeframeLabel, progress.recentRecords.length, selectedMetric],
+  );
 
   const heroActions = (
 
@@ -879,7 +876,7 @@ export default function ProgressPage() {
 
                     <div className="flex flex-wrap gap-2">
 
-                      {timeframeOptions.map((option) => (
+                      {TIMEFRAME_OPTIONS.map((option) => (
 
                         <Button
 
@@ -889,7 +886,7 @@ export default function ProgressPage() {
 
                           size="sm"
 
-                          onClick={() => setSelectedTimeframe(option.value as any)}
+                          onClick={() => setSelectedTimeframe(option.value)}
 
                         >
 
